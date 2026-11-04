@@ -5,137 +5,217 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NBA Live Player Tracker</title>
 <style>
-:root{--bg:#f5f6f8;--card:#fff;--text:#14171c;--muted:#6b7280;--line:#e3e6ea;--accent:#e8590c;--live:#16a34a}
-@media (prefers-color-scheme:dark){:root{--bg:#0f1115;--card:#1a1d24;--text:#f1f3f5;--muted:#9aa3af;--line:#2a2e37;--accent:#ff8a3d;--live:#4ade80}}
+:root{--bg:#f3f4f6;--card:#fff;--text:#14171c;--muted:#6b7280;--line:#e5e7eb;--accent:#e8590c;--live:#16a34a;--hover:#f3f4f6}
+@media (prefers-color-scheme:dark){:root{--bg:#0d0f13;--card:#171a21;--text:#f1f3f5;--muted:#9aa3af;--line:#262a33;--accent:#ff8a3d;--live:#4ade80;--hover:#20242d}}
 *{box-sizing:border-box}
-body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;padding:20px}
-main{max-width:760px;margin:0 auto}
-h1{font-size:1.4rem;margin:0 0 4px}
-.sub{color:var(--muted);font-size:.85rem;margin-bottom:16px}
-.add{display:flex;gap:8px;margin-bottom:18px}
-input{flex:1;padding:10px 12px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text);font-size:1rem}
-button{padding:10px 16px;border:0;border-radius:8px;background:var(--accent);color:#fff;font-weight:600;cursor:pointer}
-.grid{display:grid;gap:12px}
-.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 16px;display:flex;align-items:center;gap:16px}
-.pts{font-size:2.6rem;font-weight:800;min-width:64px;text-align:center;color:var(--accent);line-height:1}
-.pts small{display:block;font-size:.65rem;font-weight:600;color:var(--muted);letter-spacing:.08em}
-.info{flex:1;min-width:0}
-.name{font-weight:700}
-.meta{color:var(--muted);font-size:.85rem;margin-top:2px}
-.stats{font-size:.85rem;margin-top:6px}
-.badge{display:inline-block;font-size:.7rem;font-weight:700;padding:2px 8px;border-radius:99px;border:1px solid var(--line);color:var(--muted)}
-.badge.live{color:var(--live);border-color:var(--live)}
-.x{background:none;color:var(--muted);padding:4px 8px;font-size:1.2rem}
-.empty,.err{color:var(--muted);text-align:center;padding:30px 0}
-.err{color:#dc2626}
+body{margin:0;background:var(--bg);color:var(--text);font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:14px}
+header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 16px;flex-wrap:wrap}
+h1{font-size:1.1rem;margin:0}
+#status{color:var(--muted);font-size:.75rem}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 300px;gap:14px;padding:0 16px 24px;max-width:1100px;margin:0 auto}
+@media(max-width:860px){.layout{grid-template-columns:1fr}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;overflow:hidden}
+.ph{display:flex;justify-content:space-between;align-items:center;padding:10px 12px;border-bottom:1px solid var(--line);font-weight:700;font-size:.8rem;letter-spacing:.04em;color:var(--muted)}
+.ph button{background:none;border:1px solid var(--line);color:var(--muted);border-radius:6px;padding:2px 8px;font-size:.7rem;cursor:pointer}
+.search{position:relative;padding:10px 12px;border-bottom:1px solid var(--line)}
+.search input{width:100%;padding:9px 12px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--text);font-size:.95rem}
+#sug{position:absolute;left:12px;right:12px;top:48px;background:var(--card);border:1px solid var(--line);border-radius:8px;box-shadow:0 8px 24px rgba(0,0,0,.2);z-index:10;display:none;max-height:340px;overflow:auto}
+.sg{display:flex;align-items:center;gap:10px;padding:6px 10px;cursor:pointer}
+.sg:hover,.sg.on{background:var(--hover)}
+.sg .t{color:var(--muted);font-size:.75rem;display:flex;align-items:center;gap:4px}
+.face{width:34px;height:34px;border-radius:50%;object-fit:cover;background:var(--line);flex:none}
+.tl{width:16px;height:16px;object-fit:contain;flex:none}
+.hd,.row{display:grid;grid-template-columns:34px minmax(0,1fr) 46px 34px 34px 22px;gap:8px;align-items:center;padding:6px 12px}
+.hd{font-size:.65rem;color:var(--muted);font-weight:700;text-align:center;border-bottom:1px solid var(--line)}
+.row{border-bottom:1px solid var(--line)}
+.row:last-child{border:0}
+.who{min-width:0}
+.nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
+.gm{color:var(--muted);font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gm.live{color:var(--live);font-weight:600}
+.n{text-align:center;font-variant-numeric:tabular-nums;color:var(--muted)}
+.n.pts{font-size:1.25rem;font-weight:800;color:var(--accent)}
+.x{background:none;border:0;color:var(--muted);cursor:pointer;font-size:1rem;padding:0}
+.empty{color:var(--muted);text-align:center;padding:28px 12px}
+.day{padding:6px 12px;font-size:.7rem;font-weight:700;color:var(--muted);background:var(--bg);letter-spacing:.04em}
+.g{display:grid;grid-template-columns:1fr auto;gap:6px;align-items:center;padding:7px 12px;border-bottom:1px solid var(--line)}
+.tm{display:flex;align-items:center;gap:6px;font-weight:600;font-size:.82rem}
+.tm span.s{margin-left:auto;font-variant-numeric:tabular-nums}
+.gt{font-size:.72rem;color:var(--muted);text-align:right;white-space:nowrap}
+.gt.live{color:var(--live);font-weight:700}
+.dot{display:inline-block;background:var(--accent);color:#fff;border-radius:99px;font-size:.65rem;padding:0 6px;margin-left:4px}
 </style>
 </head>
 <body>
-<main>
-  <h1>🏀 NBA Live Player Tracker</h1>
-  <div class="sub" id="status">Loading today’s games…</div>
-  <div class="add">
-    <input id="inp" list="players" placeholder="Search a player (e.g. Luka Dončić)" autocomplete="off">
-    <datalist id="players"></datalist>
-    <button id="addBtn">Add</button>
-  </div>
-  <div class="grid" id="list"></div>
-</main>
+<header><h1>🏀 NBA Live Tracker</h1><div id="status">Loading…</div></header>
+<div class="layout">
+  <section class="panel">
+    <div class="search">
+      <input id="inp" placeholder="Search any NBA player…" autocomplete="off">
+      <div id="sug"></div>
+    </div>
+    <div class="ph"><span>MY PLAYERS (<span id="cnt">0</span>)</span><button id="sortBtn"></button></div>
+    <div class="hd"><span></span><span style="text-align:left">PLAYER</span><span>PTS</span><span>REB</span><span>AST</span><span></span></div>
+    <div id="list"></div>
+  </section>
+  <aside class="panel">
+    <div class="ph"><span>GAMES · NEXT 3 DAYS</span></div>
+    <div id="sched"></div>
+  </aside>
+</div>
 <script>
 const API='https://site.api.espn.com/apis/site/v2/sports/basketball/nba';
-let roster={};            // id -> {name, team}
-let games=[];             // today's scoreboard events
-let box={};               // eventId -> parsed boxscore players
-let watch=[];
-try{watch=JSON.parse(localStorage.getItem('nbaWatch')||'[]')}catch(e){}
 const $=id=>document.getElementById(id);
-const save=()=>{try{localStorage.setItem('nbaWatch',JSON.stringify(watch))}catch(e){}};
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const j=async u=>{const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json()};
+const ls={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
+let teams={},players=[],games=[],box={};
+let watch=ls.get('nbaWatch2',[]),sortMode=ls.get('nbaSort','pts');
+const face=id=>`https://a.espncdn.com/i/headshots/nba/players/full/${id}.png`;
+const ymd=d=>d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
+const imgErr="this.onerror=null;this.style.visibility='hidden'";
+const tImg=t=>t?.logo?`<img class="tl" src="${esc(t.logo)}" onerror="${imgErr}">`:'';
+const fmtT=d=>new Date(d).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'});
 
-async function loadGames(){
-  const d=await j(API+'/scoreboard');
-  games=d.events||[];
-  const teams=new Map();
-  games.forEach(g=>g.competitions[0].competitors.forEach(c=>teams.set(c.team.id,c.team.abbreviation)));
-  await Promise.all([...teams].map(async([id,abbr])=>{
+async function loadRosters(){
+  const c=ls.get('nbaRoster',null);
+  if(c&&Date.now()-c.t<864e5){teams=c.teams;players=c.players;return}
+  const d=await j(API+'/teams');
+  d.sports[0].leagues[0].teams.forEach(({team:t})=>teams[t.id]={id:t.id,abbr:t.abbreviation,logo:t.logos?.[0]?.href,name:t.displayName});
+  await Promise.all(Object.keys(teams).map(async id=>{
     try{
       const r=await j(`${API}/teams/${id}/roster`);
-      let a=r.athletes||[];
-      if(a.length&&a[0].items)a=a.flatMap(x=>x.items);
-      a.forEach(p=>roster[p.id]={name:p.displayName,team:abbr});
+      let a=r.athletes||[];if(a.length&&a[0].items)a=a.flatMap(x=>x.items);
+      a.forEach(p=>players.push({id:p.id,name:p.displayName,team:id,pos:p.position?.abbreviation||'',img:p.headshot?.href||face(p.id)}));
     }catch(e){}
   }));
-  $('players').innerHTML=Object.values(roster).map(p=>`<option value="${p.name}">`).join('');
+  ls.set('nbaRoster',{t:Date.now(),teams,players});
 }
 
 async function refresh(){
   try{
-    const d=await j(API+'/scoreboard');
-    games=d.events||[];
-    await Promise.all(games.filter(g=>g.status.type.state!=='pre').map(async g=>{
+    const a=new Date(Date.now()-864e5),b=new Date(Date.now()+3*864e5);
+    const d=await j(`${API}/scoreboard?dates=${ymd(a)}-${ymd(b)}&limit=100`);
+    games=(d.events||[]).sort((x,y)=>new Date(x.date)-new Date(y.date));
+    await Promise.all(games.filter(g=>g.status.type.state!=='pre'&&Date.now()-new Date(g.date)<36e5*30).map(async g=>{
       try{
-        const s=await j(`${API}/summary?event=${g.id}`);
-        const out={};
+        const s=await j(`${API}/summary?event=${g.id}`),out={};
         (s.boxscore?.players||[]).forEach(t=>{
           const st=t.statistics?.[0];if(!st)return;
-          const L=st.labels||[];
-          (st.athletes||[]).forEach(a=>{
-            const o={dnp:a.didNotPlay||!a.stats?.length};
-            L.forEach((l,i)=>o[l]=a.stats?.[i]);
-            out[a.athlete.id]=o;
+          (st.athletes||[]).forEach(p=>{
+            const o={dnp:p.didNotPlay||!p.stats?.length};
+            (st.labels||[]).forEach((l,i)=>o[l]=p.stats?.[i]);
+            out[p.athlete.id]=o;
           });
         });
         box[g.id]=out;
       }catch(e){}
     }));
-    $('status').textContent='Updated '+new Date().toLocaleTimeString()+' · auto-refreshes every 20s';
-  }catch(e){$('status').innerHTML='<span class="err">Could not reach ESPN. Check your connection.</span>'}
+    $('status').textContent='Updated '+new Date().toLocaleTimeString()+' · refreshes every 20s';
+  }catch(e){$('status').textContent='⚠ Could not reach ESPN'}
   render();
 }
 
-function render(){
-  if(!watch.length){$('list').innerHTML='<div class="empty">Search and add players to follow their points live.</div>';return}
-  $('list').innerHTML=watch.map(p=>{
-    const g=games.find(g=>g.competitions[0].competitors.some(c=>c.team.abbreviation===p.team));
-    let pts='–',badge='<span class="badge">No game today</span>',meta=p.team,stats='';
-    if(g){
-      const c=g.competitions[0].competitors;
-      const home=c.find(x=>x.homeAway==='home'),away=c.find(x=>x.homeAway==='away');
-      const state=g.status.type.state;
-      meta=`${away.team.abbreviation} ${away.score||0} @ ${home.team.abbreviation} ${home.score||0}`;
-      if(state==='pre'){
-        badge='<span class="badge">'+new Date(g.date).toLocaleString([], {weekday:'short',hour:'numeric',minute:'2-digit'})+'</span>';
-        meta=`${away.team.abbreviation} @ ${home.team.abbreviation}`;
-      }else{
-        badge=state==='in'?`<span class="badge live">● LIVE · ${g.status.type.shortDetail}</span>`:`<span class="badge">${g.status.type.shortDetail}</span>`;
-        const b=box[g.id]?.[p.id];
-        if(b&&!b.dnp){pts=b.PTS??0;stats=`${b.REB??0} REB · ${b.AST??0} AST · ${b.MIN??0} MIN · FG ${b.FG??'-'}`}
-        else if(b)stats='Did not play';
-        else stats='Not in boxscore yet';
-        if(b&&!b.dnp)pts=b.PTS;
-      }
-    }
-    return `<div class="card"><div class="pts">${pts}<small>PTS</small></div>
-      <div class="info"><div class="name">${p.name} <span class="meta">· ${p.team}</span></div>
-      <div class="meta">${meta}</div><div class="stats">${stats}</div><div style="margin-top:6px">${badge}</div></div>
-      <button class="x" onclick="rm('${p.id}')" title="Remove">×</button></div>`;
-  }).join('');
+const teamsOf=g=>g.competitions[0].competitors;
+function pickGame(tid){
+  const m=games.filter(g=>teamsOf(g).some(c=>c.team.id===tid));
+  return m.find(g=>g.status.type.state==='in')
+    ||[...m].reverse().find(g=>g.status.type.state==='post'&&Date.now()-new Date(g.date)<36e5*14)
+    ||m.find(g=>g.status.type.state==='pre')
+    ||m[m.length-1];
 }
 
-function add(){
-  const v=$('inp').value.trim().toLowerCase();if(!v)return;
-  const id=Object.keys(roster).find(i=>roster[i].name.toLowerCase()===v)||
-           Object.keys(roster).find(i=>roster[i].name.toLowerCase().includes(v));
-  if(!id){alert('Player not found among teams playing today.');return}
-  if(!watch.some(p=>p.id===id))watch.push({id,...roster[id]});
-  save();$('inp').value='';render();
+function rowData(w){
+  const g=pickGame(w.team),t=teams[w.team];
+  const r={w,t,pts:null,reb:'',ast:'',gm:'No game in next 3 days',live:false,state:'none'};
+  if(!g)return r;
+  const c=teamsOf(g),h=c.find(x=>x.homeAway==='home'),a=c.find(x=>x.homeAway==='away');
+  const ab=x=>teams[x.team.id]?.abbr||x.team.abbreviation,state=g.status.type.state;
+  r.state=state;
+  if(state==='pre'){
+    const day=new Date(g.date).toLocaleDateString([],{weekday:'short'});
+    r.gm=`${ab(a)} @ ${ab(h)} · ${day} ${fmtT(g.date)}`;
+  }else{
+    r.live=state==='in';
+    r.gm=`${ab(a)} ${a.score} @ ${ab(h)} ${h.score} · ${g.status.type.shortDetail}`;
+    const b=box[g.id]?.[w.id];
+    if(b&&!b.dnp){r.pts=+b.PTS||0;r.reb=b.REB??'';r.ast=b.AST??''}
+    else if(b)r.gm+=' · DNP';
+  }
+  return r;
 }
-window.rm=id=>{watch=watch.filter(p=>p.id!==id);save();render()};
-$('addBtn').onclick=add;
-$('inp').addEventListener('keydown',e=>{if(e.key==='Enter')add()});
+
+function render(){
+  $('cnt').textContent=watch.length;
+  $('sortBtn').textContent=sortMode==='pts'?'Sort: Points':'Sort: Added';
+  if(!watch.length)$('list').innerHTML='<div class="empty">Search a player above to start tracking.</div>';
+  else{
+    let rows=watch.map(rowData);
+    if(sortMode==='pts')rows.sort((a,b)=>(b.live-a.live)||((b.pts??-1)-(a.pts??-1)));
+    $('list').innerHTML=rows.map(r=>`<div class="row">
+      <img class="face" src="${esc(face(r.w.id))}" onerror="${imgErr}">
+      <div class="who"><div class="nm">${esc(r.w.name)} ${tImg(r.t)}</div>
+      <div class="gm${r.live?' live':''}">${r.live?'● ':''}${esc(r.gm)}</div></div>
+      <div class="n pts">${r.pts??'–'}</div><div class="n">${r.reb||'–'}</div><div class="n">${r.ast||'–'}</div>
+      <button class="x" onclick="rm('${esc(r.w.id)}')" title="Remove">×</button></div>`).join('');
+  }
+  renderSched();
+}
+
+function renderSched(){
+  const tracked=new Set(watch.map(w=>w.team));
+  const list=games.filter(g=>g.status.type.state!=='post');
+  if(!list.length){$('sched').innerHTML='<div class="empty">No games found.</div>';return}
+  const today=new Date().toDateString(),tom=new Date(Date.now()+864e5).toDateString();
+  let html='',last='';
+  const live=list.filter(g=>g.status.type.state==='in'),rest=list.filter(g=>g.status.type.state==='pre');
+  const card=g=>{
+    const c=teamsOf(g),a=c.find(x=>x.homeAway==='away'),h=c.find(x=>x.homeAway==='home'),st=g.status.type.state;
+    const mine=[a,h].reduce((n,x)=>n+watch.filter(w=>w.team===x.team.id).length,0);
+    const row=x=>`<div class="tm">${tImg(teams[x.team.id]||x.team)}${esc(teams[x.team.id]?.abbr||x.team.abbreviation)}${st==='in'?`<span class="s">${x.score}</span>`:''}</div>`;
+    return `<div class="g"><div>${row(a)}${row(h)}</div><div class="gt${st==='in'?' live':''}">${st==='in'?'● '+esc(g.status.type.shortDetail):fmtT(g.date)}${mine?`<br><span class="dot">${mine} tracked</span>`:''}</div></div>`;
+  };
+  if(live.length)html+='<div class="day">LIVE NOW</div>'+live.map(card).join('');
+  rest.forEach(g=>{
+    const ds=new Date(g.date).toDateString();
+    if(ds!==last){last=ds;html+=`<div class="day">${ds===today?'TODAY':ds===tom?'TOMORROW':new Date(g.date).toLocaleDateString([],{weekday:'long',month:'short',day:'numeric'}).toUpperCase()}</div>`}
+    html+=card(g);
+  });
+  $('sched').innerHTML=html;
+}
+
+/* search */
+let sel=0,cur=[];
+function suggest(){
+  const q=$('inp').value.trim().toLowerCase(),box=$('sug');
+  if(q.length<2){box.style.display='none';return}
+  cur=players.filter(p=>p.name.toLowerCase().includes(q)&&!watch.some(w=>w.id===p.id)).slice(0,8);sel=0;
+  box.innerHTML=cur.map((p,i)=>`<div class="sg${i?'':' on'}" data-i="${i}">
+    <img class="face" src="${esc(p.img)}" onerror="${imgErr}">
+    <div><b>${esc(p.name)}</b><div class="t">${tImg(teams[p.team])}${esc(teams[p.team]?.name||'')} ${p.pos?'· '+esc(p.pos):''}</div></div></div>`).join('')||'<div class="empty">No players found</div>';
+  box.style.display='block';
+}
+function add(p){
+  if(!p)return;
+  watch.push({id:p.id,name:p.name,team:p.team});ls.set('nbaWatch2',watch);
+  $('inp').value='';$('sug').style.display='none';render();
+}
+window.rm=id=>{watch=watch.filter(w=>w.id!==id);ls.set('nbaWatch2',watch);render()};
+$('inp').addEventListener('input',suggest);
+$('inp').addEventListener('keydown',e=>{
+  const els=[...document.querySelectorAll('.sg')];
+  if(e.key==='ArrowDown'||e.key==='ArrowUp'){e.preventDefault();sel=Math.max(0,Math.min(els.length-1,sel+(e.key==='ArrowDown'?1:-1)));els.forEach((x,i)=>x.classList.toggle('on',i===sel))}
+  if(e.key==='Enter')add(cur[sel]);
+  if(e.key==='Escape')$('sug').style.display='none';
+});
+$('sug').addEventListener('mousedown',e=>{const s=e.target.closest('.sg');if(s)add(cur[+s.dataset.i])});
+document.addEventListener('click',e=>{if(!e.target.closest('.search'))$('sug').style.display='none'});
+$('sortBtn').onclick=()=>{sortMode=sortMode==='pts'?'added':'pts';ls.set('nbaSort',sortMode);render()};
 
 (async()=>{
-  try{await loadGames()}catch(e){$('status').innerHTML='<span class="err">Could not load games from ESPN.</span>'}
+  render();
+  try{await loadRosters()}catch(e){$('status').textContent='⚠ Could not load players'}
+  watch=watch.map(w=>w.team?w:{...w,team:players.find(p=>p.id===w.id)?.team});
   await refresh();
   setInterval(refresh,20000);
 })();
