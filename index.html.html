@@ -25,10 +25,20 @@ h1{font-size:1.1rem;margin:0}
 .sg .t{color:var(--muted);font-size:.75rem;display:flex;align-items:center;gap:4px}
 .face{width:34px;height:34px;border-radius:50%;object-fit:cover;background:var(--line);flex:none}
 .tl{width:16px;height:16px;object-fit:contain;flex:none}
-.hd,.row{display:grid;grid-template-columns:34px minmax(0,1fr) 46px 34px 34px 22px;gap:8px;align-items:center;padding:6px 12px}
+.hd,.row{display:grid;grid-template-columns:34px minmax(0,1fr) 46px 34px 34px 20px 20px;gap:8px;align-items:center;padding:6px 12px}
 .hd{font-size:.65rem;color:var(--muted);font-weight:700;text-align:center;border-bottom:1px solid var(--line)}
-.row{border-bottom:1px solid var(--line)}
-.row:last-child{border:0}
+.wrap{border-bottom:1px solid var(--line)}
+.wrap:last-child{border:0}
+.wrap.hit{background:rgba(34,197,94,.10)}
+.hit .nm{color:var(--live)}
+.sub{display:flex;flex-wrap:wrap;gap:6px;align-items:center;padding:0 12px 8px 54px;font-size:.72rem}
+.chip{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line);border-radius:99px;padding:1px 4px 1px 8px;color:var(--muted)}
+.chip.ok{border-color:var(--live);color:var(--live);font-weight:700}
+.chip button{background:none;border:0;color:inherit;cursor:pointer;padding:0 3px;font-size:.85rem}
+.ed{display:flex;gap:6px;align-items:center;flex-wrap:wrap;color:var(--muted)}
+.ed select,.ed input{padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--text);font-size:.8rem}
+.ed input{width:56px}
+.ed button{background:var(--accent);color:#fff;border:0;border-radius:6px;padding:3px 10px;font-weight:600;cursor:pointer}
 .who{min-width:0}
 .nm{font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:5px}
 .gm{color:var(--muted);font-size:.72rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
@@ -55,7 +65,7 @@ h1{font-size:1.1rem;margin:0}
       <div id="sug"></div>
     </div>
     <div class="ph"><span>MY PLAYERS (<span id="cnt">0</span>)</span><button id="sortBtn"></button></div>
-    <div class="hd"><span></span><span style="text-align:left">PLAYER</span><span>PTS</span><span>REB</span><span>AST</span><span></span></div>
+    <div class="hd"><span></span><span style="text-align:left">PLAYER</span><span>PTS</span><span>REB</span><span>AST</span><span></span><span></span></div>
     <div id="list"></div>
   </section>
   <aside class="panel">
@@ -70,6 +80,9 @@ const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const j=async(path,params={})=>{const q=new URLSearchParams({p:'basketball/nba/'+path,...params});const r=await fetch('/api/espn?'+q);if(!r.ok)throw new Error(r.status);return r.json()};
 const ls={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let teams={},players=[],games=[],box={};
+const STATS={PTS:'Points',REB:'Rebounds',AST:'Assists',STL:'Steals',BLK:'Blocks','3PM':'3PT made',TO:'Turnovers'};
+const val=(b,k)=>k==='3PM'?(parseInt(b['3PT'])||0):(+b[k]||0);
+let editId=null,draft={stat:'PTS',min:10};
 let watch=ls.get('nbaWatch2',[]),sortMode=ls.get('nbaSort','pts');
 const face=id=>`https://a.espncdn.com/i/headshots/nba/players/full/${id}.png`;
 const ymd=d=>d.getFullYear()+String(d.getMonth()+1).padStart(2,'0')+String(d.getDate()).padStart(2,'0');
@@ -129,7 +142,7 @@ function pickGame(tid){
 
 function rowData(w){
   const g=pickGame(w.team),t=teams[w.team];
-  const r={w,t,pts:null,reb:'',ast:'',gm:'No game in next 3 days',live:false,state:'none'};
+  const r={w,t,rules:(w.rules||[]).map(x=>({...x,v:null,ok:false})),hit:false,pts:null,reb:'',ast:'',gm:'No game in next 3 days',live:false,state:'none'};
   if(!g)return r;
   const c=teamsOf(g),h=c.find(x=>x.homeAway==='home'),a=c.find(x=>x.homeAway==='away');
   const ab=x=>teams[x.team.id]?.abbr||x.team.abbreviation,state=g.status.type.state;
@@ -141,25 +154,42 @@ function rowData(w){
     r.live=state==='in';
     r.gm=`${ab(a)} ${a.score} @ ${ab(h)} ${h.score} · ${g.status.type.shortDetail}`;
     const b=box[g.id]?.[w.id];
-    if(b&&!b.dnp){r.pts=+b.PTS||0;r.reb=b.REB??'';r.ast=b.AST??''}
+    if(b&&!b.dnp){r.b=b;r.pts=+b.PTS||0;r.reb=b.REB??'';r.ast=b.AST??''}
     else if(b)r.gm+=' · DNP';
   }
+  if(r.b){r.rules=r.rules.map(x=>{const v=val(r.b,x.stat);return {...x,v,ok:v>=x.min}});r.hit=r.rules.some(x=>x.ok)}
   return r;
 }
 
+function sub(r){
+  const id=esc(r.w.id);
+  const chips=r.rules.map((x,i)=>`<span class="chip${x.ok?' ok':''}">${x.ok?'✓ ':''}${esc(STATS[x.stat])} ≥ ${x.min}${x.v!==null?' ('+x.v+')':''}<button onclick="rmRule('${id}',${i})" title="Remove alert">×</button></span>`).join('');
+  const ed=editId===r.w.id?`<div class="ed">Green when <select onchange="draft.stat=this.value">${Object.entries(STATS).map(([k,n])=>`<option value="${k}"${draft.stat===k?' selected':''}>${n}</option>`).join('')}</select> ≥ <input type="number" min="1" value="${draft.min}" oninput="draft.min=+this.value" onkeydown="if(event.key==='Enter')addRule('${id}')"><button onclick="addRule('${id}')">Add</button></div>`:'';
+  return chips||ed?`<div class="sub">${chips}${ed}</div>`:'';
+}
+window.toggleEdit=id=>{editId=editId===id?null:id;render();setTimeout(()=>document.querySelector('.ed input')?.focus(),0)};
+window.addRule=id=>{
+  const w=watch.find(x=>x.id===id);if(!w||!(draft.min>0))return;
+  w.rules=(w.rules||[]).concat({stat:draft.stat,min:draft.min});
+  ls.set('nbaWatch2',watch);editId=null;render();
+};
+window.rmRule=(id,i)=>{const w=watch.find(x=>x.id===id);if(!w)return;w.rules.splice(i,1);ls.set('nbaWatch2',watch);render()};
+
 function render(){
+  if(editId&&/^(INPUT|SELECT)$/.test(document.activeElement.tagName)&&$('list').contains(document.activeElement))return renderSched();
   $('cnt').textContent=watch.length;
   $('sortBtn').textContent=sortMode==='pts'?'Sort: Points':'Sort: Added';
   if(!watch.length)$('list').innerHTML='<div class="empty">Search a player above to start tracking.</div>';
   else{
     let rows=watch.map(rowData);
     if(sortMode==='pts')rows.sort((a,b)=>(b.live-a.live)||((b.pts??-1)-(a.pts??-1)));
-    $('list').innerHTML=rows.map(r=>`<div class="row">
+    $('list').innerHTML=rows.map(r=>`<div class="wrap${r.hit?' hit':''}"><div class="row">
       <img class="face" src="${esc(face(r.w.id))}" onerror="${imgErr}">
       <div class="who"><div class="nm">${esc(r.w.name)} ${tImg(r.t)}</div>
       <div class="gm${r.live?' live':''}">${r.live?'● ':''}${esc(r.gm)}</div></div>
       <div class="n pts">${r.pts??'–'}</div><div class="n">${r.reb||'–'}</div><div class="n">${r.ast||'–'}</div>
-      <button class="x" onclick="rm('${esc(r.w.id)}')" title="Remove">×</button></div>`).join('');
+      <button class="x" onclick="toggleEdit('${esc(r.w.id)}')" title="Add alert">🎯</button>
+      <button class="x" onclick="rm('${esc(r.w.id)}')" title="Remove">×</button></div>${sub(r)}</div>`).join('');
   }
   renderSched();
 }
