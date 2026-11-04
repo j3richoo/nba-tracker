@@ -67,7 +67,7 @@ h1{font-size:1.1rem;margin:0}
 const API='https://site.api.espn.com/apis/site/v2/sports/basketball/nba';
 const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const j=async u=>{const r=await fetch(u);if(!r.ok)throw new Error(r.status);return r.json()};
+const j=async(path,params={})=>{const q=new URLSearchParams({p:'basketball/nba/'+path,...params});const r=await fetch('/api/espn?'+q);if(!r.ok)throw new Error(r.status);return r.json()};
 const ls={get:(k,d)=>{try{return JSON.parse(localStorage.getItem(k))??d}catch(e){return d}},set:(k,v)=>{try{localStorage.setItem(k,JSON.stringify(v))}catch(e){}}};
 let teams={},players=[],games=[],box={};
 let watch=ls.get('nbaWatch2',[]),sortMode=ls.get('nbaSort','pts');
@@ -80,11 +80,11 @@ const fmtT=d=>new Date(d).toLocaleTimeString([],{hour:'numeric',minute:'2-digit'
 async function loadRosters(){
   const c=ls.get('nbaRoster',null);
   if(c&&Date.now()-c.t<864e5){teams=c.teams;players=c.players;return}
-  const d=await j(API+'/teams');
+  const d=await j('teams');
   d.sports[0].leagues[0].teams.forEach(({team:t})=>teams[t.id]={id:t.id,abbr:t.abbreviation,logo:t.logos?.[0]?.href,name:t.displayName});
   await Promise.all(Object.keys(teams).map(async id=>{
     try{
-      const r=await j(`${API}/teams/${id}/roster`);
+      const r=await j(`teams/${id}/roster`);
       let a=r.athletes||[];if(a.length&&a[0].items)a=a.flatMap(x=>x.items);
       a.forEach(p=>players.push({id:p.id,name:p.displayName,team:id,pos:p.position?.abbreviation||'',img:p.headshot?.href||face(p.id)}));
     }catch(e){}
@@ -94,12 +94,14 @@ async function loadRosters(){
 
 async function refresh(){
   try{
-    const a=new Date(Date.now()-864e5),b=new Date(Date.now()+3*864e5);
-    const d=await j(`${API}/scoreboard?dates=${ymd(a)}-${ymd(b)}&limit=100`);
-    games=(d.events||[]).sort((x,y)=>new Date(x.date)-new Date(y.date));
+    const days=[-1,0,1,2,3].map(n=>ymd(new Date(Date.now()+n*864e5)));
+    const res=await Promise.all(days.map(d=>j('scoreboard',{dates:d,limit:100}).catch(()=>({events:[]}))));
+    const seen=new Set();
+    games=res.flatMap(r=>r.events||[]).filter(g=>!seen.has(g.id)&&seen.add(g.id)).sort((x,y)=>new Date(x.date)-new Date(y.date));
+    if(!games.length)throw new Error('no data');
     await Promise.all(games.filter(g=>g.status.type.state!=='pre'&&Date.now()-new Date(g.date)<36e5*30).map(async g=>{
       try{
-        const s=await j(`${API}/summary?event=${g.id}`),out={};
+        const s=await j('summary',{event:g.id}),out={};
         (s.boxscore?.players||[]).forEach(t=>{
           const st=t.statistics?.[0];if(!st)return;
           (st.athletes||[]).forEach(p=>{
