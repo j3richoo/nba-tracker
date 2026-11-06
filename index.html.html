@@ -5,8 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NBA Live Player Tracker</title>
 <style>
-:root{--bg:#f4f5f9;--card:#fff;--card2:#f7f8fc;--text:#0f1222;--muted:#6b7385;--line:#e7eaf2;--accent:#6d5efc;--accent2:#ff7a45;--live:#10b981;--bad:#ef4444;--shadow:0 1px 2px rgba(16,24,40,.05),0 10px 30px rgba(16,24,40,.07)}
-@media (prefers-color-scheme:dark){:root{--bg:#0a0c14;--card:#131724;--card2:#0f1320;--text:#eef0f7;--muted:#8b93a7;--line:#222840;--accent:#8b7dff;--accent2:#ff8f5a;--live:#34d399;--bad:#f87171;--shadow:0 1px 2px rgba(0,0,0,.4),0 14px 34px rgba(0,0,0,.35)}}
+:root{color-scheme:dark;--bg:#0a0c14;--card:#131724;--card2:#0f1320;--text:#eef0f7;--muted:#8b93a7;--line:#222840;--accent:#8b7dff;--accent2:#ff8f5a;--live:#34d399;--bad:#f87171;--shadow:0 1px 2px rgba(0,0,0,.4),0 14px 34px rgba(0,0,0,.35)}
 *{box-sizing:border-box}
 body{margin:0;color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:14px;background:var(--bg) radial-gradient(900px 380px at 15% -10%,rgba(109,94,252,.16),transparent 60%),radial-gradient(700px 320px at 95% 0,rgba(255,122,69,.12),transparent 60%) no-repeat;min-height:100vh}
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 14px;flex-wrap:wrap;max-width:1180px;margin:0 auto}
@@ -70,9 +69,19 @@ h1{font-size:1.15rem;margin:0;letter-spacing:-.01em}
 .gt.live{color:var(--live);font-weight:700}
 .dot{display:inline-block;background:var(--accent);color:#fff;border-radius:99px;font-size:.62rem;padding:1px 7px;margin-top:4px}
 .tip{padding:8px 14px;font-size:.7rem;color:var(--muted);border-top:1px solid var(--line)}
+#pickPop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(5,7,12,.62);backdrop-filter:blur(6px);z-index:100;cursor:pointer}
+#pickPop.show{display:flex;animation:fade .18s ease}
+.pp{background:var(--card);border:1px solid var(--accent);border-radius:24px;padding:28px 40px;text-align:center;box-shadow:0 0 0 6px rgba(139,125,255,.15),0 30px 80px rgba(0,0,0,.6);animation:pop .28s cubic-bezier(.2,1.4,.4,1)}
+.pp img{width:110px;height:110px;object-fit:contain;filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}
+.pp .k{font-size:.7rem;font-weight:800;letter-spacing:.14em;color:var(--accent);margin-top:10px}
+.pp .t{font-size:1.5rem;font-weight:800;margin-top:4px}
+.pp .m{font-size:.8rem;color:var(--muted);margin-top:6px}
+@keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
+@keyframes fade{from{opacity:0}to{opacity:1}}
 </style>
 </head>
 <body>
+<div id="pickPop" onclick="this.classList.remove('show')"></div>
 <header><div class="brand"><span class="logo">🏀</span><h1>NBA Live Tracker</h1></div><div id="status">Loading…</div></header>
 <div class="layout">
   <section class="panel">
@@ -201,6 +210,14 @@ window.pick=(gid,tid)=>{
   const g=games.find(x=>x.id===gid);if(!g||g.status.type.state!=='pre')return;
   if(picks[gid]===tid)delete picks[gid];else picks[gid]=tid;
   ls.set('nbaPicks',picks);renderSched();
+  if(picks[gid]){
+    const c=teamsOf(g),a=c.find(x=>x.homeAway==='away'),h=c.find(x=>x.homeAway==='home');
+    const ab=x=>teams[x.team.id]?.abbr||x.team.abbreviation,t=teams[tid]||c.find(x=>x.team.id===tid).team;
+    const pop=$('pickPop');
+    pop.innerHTML=`<div class="pp">${t.logo?`<img src="${esc(t.logo)}" onerror="${imgErr}">`:''}<div class="k">YOUR PICK TO WIN</div><div class="t">${esc(t.name||t.displayName||t.abbreviation)}</div><div class="m">${esc(ab(a))} @ ${esc(ab(h))} · ${fmtT(g.date)}</div></div>`;
+    pop.classList.add('show');
+    clearTimeout(window._pp);window._pp=setTimeout(()=>pop.classList.remove('show'),2200);
+  }
 };
 window.rmRule=(id,i)=>{const w=watch.find(x=>x.id===id);if(!w)return;w.rules.splice(i,1);ls.set('nbaWatch2',watch);render()};
 
