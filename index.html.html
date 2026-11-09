@@ -22,7 +22,7 @@ h1{font-size:1.15rem;margin:0;letter-spacing:-.01em}
 .search{position:relative;padding:12px 14px;border-bottom:1px solid var(--line)}
 .search input{width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card2);color:var(--text);font-size:.95rem;outline:none;transition:.15s}
 .search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,255,255,.12)}
-#sug,#psug{position:absolute;left:14px;right:14px;top:56px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.25);z-index:10;display:none;max-height:360px;overflow:auto;padding:4px}
+#sug,#psug,#tsug{position:absolute;left:14px;right:14px;top:56px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.25);z-index:10;display:none;max-height:360px;overflow:auto;padding:4px}
 .sg{display:flex;align-items:center;gap:10px;padding:7px 10px;cursor:pointer;border-radius:10px}
 .sg:hover,.sg.on{background:var(--card2)}
 .sg .t{color:var(--muted);font-size:.75rem;display:flex;align-items:center;gap:4px}
@@ -120,6 +120,14 @@ select{padding:8px 10px;border:1px solid var(--line);border-radius:10px;backgrou
 .hs .tmc{flex-direction:column;gap:4px}.hs .tmc img{width:56px;height:56px}
 .hs big{font-size:2.4rem;font-weight:800}
 .ig{animation:rise .4s ease both}
+.tg{display:grid;grid-template-columns:repeat(auto-fill,minmax(128px,1fr));gap:10px;padding:14px}
+.tc{background:var(--card2);border:1px solid var(--line);border-radius:14px;padding:14px 8px;color:var(--text);cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:8px;font-weight:600;font-size:.75rem;text-align:center;animation:rise .4s ease both;animation-delay:calc(var(--i,0)*20ms);transition:transform .2s,border-color .2s}
+.tc:hover{transform:translateY(-3px);border-color:var(--muted)}
+.tc img{width:46px;height:46px}
+.tile em{display:block;font-style:normal;font-size:.62rem;color:var(--muted);margin-top:2px}
+.cl{cursor:pointer}
+.av{width:50px;height:50px;border-radius:50%;background:var(--line);display:grid;place-items:center;font-weight:800;font-size:.8rem;color:var(--muted);position:relative;overflow:hidden;flex:none;box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--line)}
+.av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
 .it{display:flex;gap:10px;padding:9px 14px;border-top:1px solid var(--line);align-items:flex-start;transition:background .15s}
 .it:hover{background:var(--card2)}
 .inj{font-size:.6rem;font-weight:800;padding:1px 7px;border-radius:99px;border:1px solid var(--line);color:var(--muted);letter-spacing:.04em}
@@ -161,6 +169,7 @@ select{padding:8px 10px;border:1px solid var(--line);border-radius:10px;backgrou
 </div>
 </div>
 <div class="view" id="v-players"><div class="wide"><div class="panel"><div class="search"><input id="pin" placeholder="Search any player's stats…" autocomplete="off"><div id="psug"></div></div><div id="pres"><div class="empty">Search a player to see their season stats.</div></div></div></div></div>
+<div class="view" id="v-teams"><div class="wide"><div class="panel"><div class="search"><input id="tin" placeholder="Search a team…" autocomplete="off"><div id="tsug"></div></div><div id="tres"></div></div></div></div>
 <div class="view" id="v-standings"><div class="wide" id="stand"></div></div>
 <div class="view" id="v-h2h"><div class="wide"><div class="panel"><div class="ph"><span>HEAD TO HEAD · LAST 3 SEASONS</span></div><div class="h2f"><select id="ha"></select><span>vs</span><select id="hb"></select><button class="add" onclick="runH2H()">Compare</button></div><div id="hres"></div></div></div></div>
 <div class="view" id="v-injuries"><div class="wide"><div class="panel"><div class="search" style="display:flex;gap:8px"><select id="ifil" onchange="renderInj()"></select><input id="iin" placeholder="Filter by player…" oninput="renderInj()" style="flex:1"></div><div id="inj"></div></div></div></div>
@@ -383,25 +392,28 @@ $('inp').addEventListener('keydown',e=>{
   if(e.key==='Escape')$('sug').style.display='none';
 });
 $('sug').addEventListener('mousedown',e=>{const s=e.target.closest('.sg');if(s)add(cur[+s.dataset.i])});
-document.addEventListener('click',e=>{if(!e.target.closest('.search'))$('sug').style.display=$('psug').style.display='none'});
+document.addEventListener('click',e=>{if(!e.target.closest('.search'))$('sug').style.display=$('psug').style.display=$('tsug').style.display='none'});
 $('sortBtn').onclick=()=>{sortMode=sortMode==='pts'?'added':'pts';ls.set('nbaSort',sortMode);render()};
 
 /* tabs */
-const TABS={tracker:'Tracker',players:'Players',standings:'Standings',h2h:'Head to Head',injuries:'Injuries'};
+const TABS={tracker:'Tracker',players:'Players',teams:'Teams',standings:'Standings',h2h:'Head to Head',injuries:'Injuries'};
 $('nav').innerHTML=Object.entries(TABS).map(([k,n])=>`<button data-k="${k}" onclick="tab('${k}')">${n}</button>`).join('');
 window.tab=k=>{document.querySelectorAll('.view').forEach(v=>v.classList.toggle('on',v.id==='v-'+k));document.querySelectorAll('#nav button').forEach(b=>b.classList.toggle('on',b.dataset.k===k));if(k==='standings')loadStand();if(k==='injuries')renderInj()};
 document.querySelector('#nav button').classList.add('on');
 function fillTeams(){
   const o=Object.values(teams).sort((a,b)=>a.name.localeCompare(b.name)).map(t=>`<option value="${t.id}">${esc(t.name)}</option>`).join('');
-  $('ha').innerHTML=$('hb').innerHTML=o;$('hb').selectedIndex=1;$('ifil').innerHTML='<option value="">All teams</option>'+o;
+  $('ha').innerHTML=$('hb').innerHTML=o;$('hb').selectedIndex=1;$('ifil').innerHTML='<option value="">All teams</option>'+o;tgrid();
 }
 /* injuries */
 let inj=[],injMap={};
+const pid=a=>a?.id||players.find(x=>x.name.toLowerCase()===(a?.displayName||'').toLowerCase())?.id;
+const av=a=>{const id=pid(a),pl=players.find(x=>x.id===id),src=a?.headshot?.href||pl?.img||(id?face(id):'');
+  return `<div class="av">${esc((a?.displayName||'?').split(' ').map(x=>x[0]).slice(0,2).join(''))}${src?`<img src="${esc(src)}" onerror="this.remove()">`:''}</div>`};
 const injC=s=>/out/i.test(s)?'o':/day|quest|doubt|prob/i.test(s)?'d':'';
 const injB=id=>{const i=injMap[id];if(!i)return'';return `<span class="inj ${injC(i.s)}">${/out/i.test(i.s)?'OUT':/day/i.test(i.s)?'DTD':esc(i.s.slice(0,4).toUpperCase())}</span>`};
 async function loadInj(){
   try{const d=await j('injuries');inj=d.injuries||[];injMap={};
-    inj.forEach(t=>(t.injuries||[]).forEach(e=>{if(e.athlete?.id)injMap[e.athlete.id]={s:e.status||e.type?.description||''}}));}catch(e){}
+    inj.forEach(t=>(t.injuries||[]).forEach(e=>{if(pid(e.athlete))injMap[pid(e.athlete)]={s:e.status||e.type?.description||''}}));}catch(e){}
   render();if($('v-injuries').classList.contains('on'))renderInj();
 }
 function renderInj(){
@@ -411,7 +423,7 @@ function renderInj(){
     if(!es.length)return'';
     return `<div class="ig"><div class="day tmc">${tImg(teams[t.id])}${esc(t.displayName)} · ${es.length}</div>`+es.map(e=>{
       const s=e.status||e.type?.description||'',d=e.details||{},info=[d.type,d.detail,d.side].filter(Boolean).join(' · ');
-      return `<div class="it"><img class="face" src="${face(e.athlete?.id)}" onerror="${imgErr}"><div style="flex:1;min-width:0"><div class="nm">${esc(e.athlete?.displayName)} <span class="inj ${injC(s)}">${esc(s)}</span></div><div class="gm" style="white-space:normal">${esc(info)}${d.returnDate?' · Return '+esc(d.returnDate):''} ${esc(e.shortComment||'')}</div></div></div>`}).join('')+'</div>';
+      return `<div class="it">${av(e.athlete)}<div style="flex:1;min-width:0"><div class="nm">${esc(e.athlete?.displayName)} <span class="inj ${injC(s)}">${esc(s)}</span></div><div class="gm" style="white-space:normal">${esc(info)}${d.returnDate?' · Return '+esc(d.returnDate):''} ${esc(e.shortComment||'')}</div></div></div>`}).join('')+'</div>';
   }).join('');
   $('inj').innerHTML=h||`<div class="empty">${inj.length?'No matches.':'No injury data available right now.'}</div>`;
 }
@@ -426,7 +438,7 @@ async function loadStand(){
     const es=[...(c.standings?.entries||[])].sort((a,b)=>(+(g(a,'playoffSeed')?.value||99))-(+(g(b,'playoffSeed')?.value||99))||(+g(b,'winPercent')?.value||0)-(+g(a,'winPercent')?.value||0));
     return `<div class="panel"><div class="ph"><span>${esc(c.name||'').toUpperCase()}</span></div><div class="sc"><table class="tb"><thead><tr><th>#</th><th>TEAM</th><th>W</th><th>L</th><th>PCT</th><th>GB</th><th>STRK</th></tr></thead><tbody>`+
     es.map((e,i)=>{const t=teams[e.team.id]||{logo:e.team.logos?.[0]?.href,name:e.team.displayName},v=n=>esc(g(e,n)?.displayValue??'–'),pc=(+g(e,'winPercent')?.value||0)*100;
-      return `<tr class="${i===6||i===10?'cut':''}" style="--i:${i}"><td>${i+1}</td><td><div class="tmc">${tImg(t)}${esc(t.name||e.team.displayName)}</div><div class="bar"><i style="width:${pc}%"></i></div></td><td>${v('wins')}</td><td>${v('losses')}</td><td>${v('winPercent')}</td><td>${v('gamesBehind')}</td><td>${v('streak')}</td></tr>`}).join('')+'</tbody></table></div></div>';
+      return `<tr class="cl ${i===6||i===10?'cut':''}" style="--i:${i}" onclick="goTeam('${e.team.id}')"><td>${i+1}</td><td><div class="tmc">${tImg(t)}${esc(t.name||e.team.displayName)}</div><div class="bar"><i style="width:${pc}%"></i></div></td><td>${v('wins')}</td><td>${v('losses')}</td><td>${v('winPercent')}</td><td>${v('gamesBehind')}</td><td>${v('streak')}</td></tr>`}).join('')+'</tbody></table></div></div>';
   }).join('')+'</div><div class="tip">Dashed lines mark the top 6 (direct playoffs) and the play-in spots (7–10).</div>';
 }
 /* head to head */
@@ -449,6 +461,38 @@ async function runH2H(){
   R.innerHTML=`<div class="hs">${side(A,w)}<div><div class="gm">${gs.length} games · avg margin ${(gs.reduce((s,x)=>s+x.me-x.op,0)/gs.length).toFixed(1)} for ${esc(A.abbr)}</div><div class="bar" style="height:6px"><i style="width:${w/gs.length*100}%"></i></div></div>${side(B,l)}</div>
   <div class="sc"><table class="tb"><thead><tr><th>DATE</th><th>${esc(A.abbr)}</th><th>SCORE</th><th>RESULT</th></tr></thead><tbody>`+
   gs.map((x,i)=>`<tr style="--i:${i}"><td>${new Date(x.d).toLocaleDateString([],{month:'short',day:'numeric',year:'numeric'})}</td><td>${x.home?'Home':'Away'}</td><td>${x.me} – ${x.op}</td><td><span class="inj ${x.me>x.op?'':'o'}" style="${x.me>x.op?'color:var(--live);border-color:var(--live)':''}">${x.me>x.op?'W':'L'}</span></td></tr>`).join('')+'</tbody></table></div>';
+}
+/* teams */
+const tin=$('tin'),tsug=$('tsug');let tc=[];
+window.tgrid=()=>{$('tres').innerHTML='<div class="tg">'+Object.values(teams).sort((a,b)=>a.name.localeCompare(b.name)).map((t,i)=>`<button class="tc" style="--i:${i}" onclick="showTeam('${t.id}')">${t.logo?`<img src="${esc(t.logo)}" onerror="${imgErr}">`:''}<span>${esc(t.name)}</span></button>`).join('')+'</div>'};
+tin.addEventListener('input',()=>{
+  const q=tin.value.trim().toLowerCase();if(!q){tsug.style.display='none';return}
+  tc=Object.values(teams).filter(t=>t.name.toLowerCase().includes(q)||t.abbr.toLowerCase()===q).slice(0,8);
+  tsug.innerHTML=tc.map((t,i)=>`<div class="sg" data-i="${i}">${t.logo?`<img class="face" style="border-radius:8px;object-fit:contain" src="${esc(t.logo)}" onerror="${imgErr}">`:''}<b>${esc(t.name)}</b></div>`).join('')||'<div class="empty">No teams found</div>';
+  tsug.style.display='block';
+});
+tsug.addEventListener('mousedown',e=>{const x=e.target.closest('.sg');if(x){tsug.style.display='none';tin.value='';showTeam(tc[+x.dataset.i].id)}});
+tin.addEventListener('keydown',e=>{if(e.key==='Enter'&&tc[0]){tsug.style.display='none';tin.value='';showTeam(tc[0].id)}});
+window.goTeam=id=>{tab('teams');showTeam(id)};
+window.goPlayer=id=>{const p=players.find(x=>x.id===id);if(p){tab('players');showPlayer(p)}};
+async function showTeam(id){
+  const t=teams[id];if(!t)return;
+  const head=`<div class="ph0">${t.logo?`<img src="${esc(t.logo)}" style="width:70px;height:70px;object-fit:contain" onerror="${imgErr}">`:''}<div><div class="nm" style="font-size:1.2rem">${esc(t.name)}</div><div class="gm" id="tsum"></div></div><button class="h2b" style="margin-left:auto;font-size:.75rem;padding:6px 14px" onclick="tgrid()">← All teams</button></div>`;
+  $('tres').innerHTML=head+'<div class="sk"></div>';
+  const [a,b]=await Promise.all([j(`teams/${id}`).catch(()=>null),j(`teams/${id}/statistics`).catch(()=>null)]);
+  const tm=a?.team||{},items=tm.record?.items||[],ov=items.find(i=>i.type==='total')||items[0];
+  const n=k=>{const x=ov?.stats?.find(z=>z.name===k);return x?(typeof x.value==='number'&&!Number.isInteger(x.value)?+x.value.toFixed(1):(x.displayValue??x.value)):null};
+  const sm=k=>items.find(i=>i.type===k)?.summary;
+  const tl=[['RECORD',ov?.summary],['PPG',n('avgPointsFor')],['OPP PPG',n('avgPointsAgainst')],['DIFF',n('differential')],['HOME',sm('home')],['ROAD',sm('road')],['STREAK',n('streak')]].filter(x=>x[1]!=null&&x[1]!=='');
+  const ne=tm.nextEvent?.[0],cats=b?.results?.stats?.categories||b?.stats?.categories||[];
+  const tile=(v,l,r,i)=>`<div class="tile" style="--i:${i}"><b>${esc(v)}</b><span>${esc(l)}</span>${r?`<em>#${esc(r)}</em>`:''}</div>`;
+  const ros=players.filter(p=>p.team===id);
+  $('tres').innerHTML=head+
+    (tl.length?`<div class="tiles" style="padding-top:4px">${tl.map((x,i)=>tile(x[1],x[0],'',i)).join('')}</div>`:'')+
+    cats.map(c=>`<div class="day">${esc(c.displayName||c.name).toUpperCase()}</div><div class="tiles" style="padding-top:12px">${(c.stats||[]).map((x,i)=>tile(x.displayValue??x.value,x.abbreviation||x.displayName||x.name,x.rank,i)).join('')}</div>`).join('')+
+    (cats.length||tl.length?'':'<div class="empty">No team stats available right now.</div>')+
+    `<div class="day">ROSTER · ${ros.length}</div>`+ros.map(p=>`<div class="it cl" onclick="goPlayer('${p.id}')"><img class="face" src="${esc(p.img)}" onerror="${imgErr}"><div class="nm">${esc(p.name)} ${injB(p.id)}</div><div class="gm" style="margin-left:auto">${esc(p.pos)}</div></div>`).join('');
+  $('tsum').textContent=[tm.standingSummary,ne?'Next: '+ne.shortName+' · '+new Date(ne.date).toLocaleDateString([],{weekday:'short'})+' '+fmtT(ne.date):''].filter(Boolean).join(' · ');
 }
 /* player stats */
 const pin=$('pin'),psug=$('psug');let pc=[];
