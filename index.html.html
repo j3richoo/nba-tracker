@@ -82,6 +82,7 @@ h1{font-size:1.15rem;margin:0;letter-spacing:-.01em}
 .pc.ok{border-color:var(--live);background:linear-gradient(90deg,rgba(52,211,153,.14),var(--card))}.pc.ok .pi{color:var(--live);font-weight:700}
 .pc.bad{border-color:var(--bad)}.pc.bad .pi{color:var(--bad);font-weight:700}
 .pc button{background:none;border:0;color:var(--muted);cursor:pointer;font-size:1.1rem;padding:0 0 0 2px}
+.ah{font-size:.58rem;font-weight:800;letter-spacing:.08em;color:var(--muted);border:1px solid var(--line);border-radius:6px;padding:0 5px;line-height:1.5}
 #pickPop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(5,7,12,.62);backdrop-filter:blur(6px);z-index:100;cursor:pointer}
 #pickPop.show{display:flex;animation:fade .18s ease}
 .pp{background:var(--card);border:1px solid var(--accent);border-radius:24px;padding:28px 40px;text-align:center;box-shadow:0 0 0 6px rgba(139,125,255,.15),0 30px 80px rgba(0,0,0,.6);animation:pop .28s cubic-bezier(.2,1.4,.4,1)}
@@ -228,7 +229,7 @@ window.pick=(gid,tid)=>{
     const c=teamsOf(g),a=c.find(x=>x.homeAway==='away'),h=c.find(x=>x.homeAway==='home');
     const ab=x=>teams[x.team.id]?.abbr||x.team.abbreviation,t=teams[tid]||c.find(x=>x.team.id===tid).team;
     const pop=$('pickPop');
-    pop.innerHTML=`<div class="pp">${t.logo?`<img src="${esc(t.logo)}" onerror="${imgErr}">`:''}<div class="k">YOUR PICK TO WIN</div><div class="t">${esc(t.name||t.displayName||t.abbreviation)}</div><div class="m">${esc(ab(a))} @ ${esc(ab(h))} · ${fmtT(g.date)}</div></div>`;
+    pop.innerHTML=`<div class="pp">${t.logo?`<img src="${esc(t.logo)}" onerror="${imgErr}">`:''}<div class="k">YOUR PICK TO WIN · ${c.find(x=>x.team.id===tid).homeAway==='home'?'HOME':'AWAY'}</div><div class="t">${esc(t.name||t.displayName||t.abbreviation)}</div><div class="m">${esc(ab(a))} @ ${esc(ab(h))} · ${fmtT(g.date)}</div></div>`;
     pop.classList.add('show');
     clearTimeout(window._pp);window._pp=setTimeout(()=>pop.classList.remove('show'),2200);
   }
@@ -267,7 +268,7 @@ function renderPicks(){
     if(st==='in'){cls+=' live';info=`● ${me.score}-${op.score} · ${esc(g.status.type.shortDetail)}`}
     else if(st==='post'){const win=c.find(x=>x.winner)?.team.id===me.team.id;cls+=win?' ok':' bad';info=`${win?'✓ Won':'✗ Lost'} ${me.score}-${op.score} vs ${oa}`}
     else info=`${me.homeAway==='home'?'vs':'@'} ${oa} · ${new Date(g.date).toLocaleDateString([],{weekday:'short'})} ${fmtT(g.date)}`;
-    return `<div class="${cls}">${t.logo?`<img src="${esc(t.logo)}" onerror="${imgErr}">`:''}<div><div class="pn">${esc(t.name||t.displayName||t.abbreviation)}</div><div class="pi">${info}</div></div>${st==='pre'?`<button title="Remove pick" onclick="pick('${g.id}','${me.team.id}')">×</button>`:''}</div>`;
+    return `<div class="${cls}">${t.logo?`<img src="${esc(t.logo)}" onerror="${imgErr}">`:''}<div><div class="pn">${esc(t.name||t.displayName||t.abbreviation)} <span class="ah">${me.homeAway==='home'?'HOME':'AWAY'}</span></div><div class="pi">${info}</div></div>${st==='pre'?`<button title="Remove pick" onclick="pick('${g.id}','${me.team.id}')">×</button>`:''}</div>`;
   }).join('')+'</div>';
 }
 
@@ -289,7 +290,7 @@ function renderSched(){
       const tid=x.team.id,t=teams[tid]||x.team,on=pk===tid,win=st==='post'&&winOf(g)===tid;
       let tag='';
       if(on)tag=st==='post'?(win?'<span class="pk ok">✓ PICK</span>':'<span class="pk bad">✗ PICK</span>'):'<span class="pk">PICK</span>';
-      return `<div class="tm${on?' picked':''}${win?' win':''}" onclick="pick('${g.id}','${tid}')">${tImg(t)}<span class="ab">${esc(t.abbr||t.abbreviation)}</span>${tag}${st!=='pre'?`<span class="s">${x.score}</span>`:''}${win?'🏆':''}</div>`;
+      return `<div class="tm${on?' picked':''}${win?' win':''}" onclick="pick('${g.id}','${tid}')">${tImg(t)}<span class="ab">${esc(t.abbr||t.abbreviation)}</span><span class="ah">${x.homeAway==='home'?'HOME':'AWAY'}</span>${tag}${st!=='pre'?`<span class="s">${x.score}</span>`:''}${win?'🏆':''}</div>`;
     };
     const time=st==='in'?'● '+esc(g.status.type.shortDetail):st==='post'?'Final':fmtT(g.date);
     return `<div class="g"><div>${row(a)}${row(h)}</div><div class="gt${st==='in'?' live':''}">${time}${mine?`<br><span class="dot">${mine} tracked</span>`:''}</div></div>`;
