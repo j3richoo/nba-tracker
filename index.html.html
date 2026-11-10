@@ -1,16 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+<script>try{document.documentElement.dataset.theme=JSON.parse(localStorage.getItem('nbaTheme'))||'night'}catch(e){document.documentElement.dataset.theme='night'}</script>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>NBA Live Player Tracker</title>
 <style>
-:root{color-scheme:dark;--bg:#09090b;--card:#111113;--card2:#18181b;--text:#fafafa;--muted:#a1a1aa;--line:#27272a;--accent:#e4e4e7;--accent2:#fafafa;--live:#4ade80;--bad:#f87171;--shadow:0 1px 2px rgba(0,0,0,.5),0 14px 34px rgba(0,0,0,.4)}
+:root{color-scheme:dark;--bg:#09090b;--card:#111113;--card2:#18181b;--text:#fafafa;--muted:#a1a1aa;--line:#27272a;--accent:#e4e4e7;--accent2:#fafafa;--live:#4ade80;--bad:#f87171;--shadow:0 1px 2px rgba(0,0,0,.5),0 14px 34px rgba(0,0,0,.4);--on:#09090b;--tint:var(--tint);--ring:var(--ring);--g1:rgba(255,255,255,.06);--g2:rgba(255,255,255,.035)}
+:root[data-theme="day"]{color-scheme:light;--bg:#f4f4f5;--card:#fff;--card2:#f4f4f5;--text:#18181b;--muted:#71717a;--line:#e4e4e7;--accent:#27272a;--accent2:#18181b;--live:#16a34a;--bad:#dc2626;--shadow:0 1px 2px rgba(0,0,0,.05),0 10px 30px rgba(0,0,0,.08);--on:#fafafa;--tint:rgba(0,0,0,.06);--ring:rgba(0,0,0,.12);--g1:rgba(0,0,0,.05);--g2:rgba(0,0,0,.025)}
 *{box-sizing:border-box}
-body{margin:0;color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:14px;background:var(--bg) radial-gradient(900px 380px at 15% -10%,rgba(255,255,255,.06),transparent 60%),radial-gradient(700px 320px at 95% 0,rgba(255,255,255,.035),transparent 60%) no-repeat;min-height:100vh}
+body{margin:0;color:var(--text);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,sans-serif;font-size:14px;background:var(--bg) radial-gradient(900px 380px at 15% -10%,var(--g1),transparent 60%),radial-gradient(700px 320px at 95% 0,var(--g2),transparent 60%) no-repeat;min-height:100vh}
 header{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:18px 20px 14px;flex-wrap:wrap;max-width:1180px;margin:0 auto}
 .brand{display:flex;align-items:center;gap:10px}
-.logo{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:1.1rem;box-shadow:0 6px 16px rgba(255,255,255,.12)}
+.logo{width:36px;height:36px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));font-size:1.1rem;box-shadow:0 6px 16px var(--ring)}
 h1{font-size:1.15rem;margin:0;letter-spacing:-.01em}
 #status{color:var(--muted);font-size:.74rem;background:var(--card);border:1px solid var(--line);padding:5px 12px;border-radius:99px}
 .layout{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:16px;padding:0 20px 28px;max-width:1180px;margin:0 auto;align-items:start}
@@ -21,7 +23,7 @@ h1{font-size:1.15rem;margin:0;letter-spacing:-.01em}
 #rec{color:var(--live)}
 .search{position:relative;padding:12px 14px;border-bottom:1px solid var(--line)}
 .search input{width:100%;padding:11px 14px;border:1px solid var(--line);border-radius:12px;background:var(--card2);color:var(--text);font-size:.95rem;outline:none;transition:.15s}
-.search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(255,255,255,.12)}
+.search input:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--ring)}
 #sug,#psug,#tsug{position:absolute;left:14px;right:14px;top:56px;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 16px 40px rgba(0,0,0,.25);z-index:10;display:none;max-height:360px;overflow:auto;padding:4px}
 .sg{display:flex;align-items:center;gap:10px;padding:7px 10px;cursor:pointer;border-radius:10px}
 .sg:hover,.sg.on{background:var(--card2)}
@@ -51,7 +53,7 @@ h1{font-size:1.15rem;margin:0;letter-spacing:-.01em}
 .edr{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
 .ed select,.ed input{padding:5px 8px;border:1px solid var(--line);border-radius:8px;background:var(--card);color:var(--text);font-size:.8rem}
 .ed input{width:60px}
-.add{background:var(--text);color:#09090b;border:0;border-radius:8px;padding:5px 14px;font-weight:700;cursor:pointer}
+.add{background:var(--text);color:var(--on);border:0;border-radius:8px;padding:5px 14px;font-weight:700;cursor:pointer}
 .qk{display:flex;flex-wrap:wrap;gap:5px}
 .q{min-width:34px;padding:4px 8px;border-radius:99px;border:1px solid var(--line);background:var(--card);color:var(--text);font-weight:700;font-size:.78rem;cursor:pointer;transition:.12s}
 .q:hover{border-color:var(--accent);color:var(--accent)}
@@ -60,14 +62,14 @@ h1{font-size:1.15rem;margin:0;letter-spacing:-.01em}
 .g{display:grid;grid-template-columns:1fr auto;gap:8px;align-items:center;padding:8px 10px;border-top:1px solid var(--line)}
 .tm{display:flex;align-items:center;gap:8px;padding:5px 8px;border-radius:10px;border:1px solid transparent;font-weight:700;font-size:.84rem;cursor:pointer;transition:.12s}
 .tm:hover{background:var(--card2)}
-.tm.picked{border-color:var(--accent);background:rgba(255,255,255,.08)}
+.tm.picked{border-color:var(--accent);background:var(--tint)}
 .tm.win .ab{color:var(--live)}
 .tm .s{margin-left:auto;font-variant-numeric:tabular-nums}
-.pk{font-size:.6rem;font-weight:800;padding:1px 7px;border-radius:99px;background:var(--text);color:#09090b;letter-spacing:.04em}
+.pk{font-size:.6rem;font-weight:800;padding:1px 7px;border-radius:99px;background:var(--text);color:var(--on);letter-spacing:.04em}
 .pk.ok{background:var(--live)}.pk.bad{background:var(--bad)}
 .gt{font-size:.72rem;color:var(--muted);text-align:right;white-space:nowrap;padding-right:4px}
 .gt.live{color:var(--live);font-weight:700}
-.dot{display:inline-block;background:var(--text);color:#09090b;border-radius:99px;font-size:.62rem;padding:1px 7px;margin-top:4px}
+.dot{display:inline-block;background:var(--text);color:var(--on);border-radius:99px;font-size:.62rem;padding:1px 7px;margin-top:4px}
 .tip{padding:8px 14px;font-size:.7rem;color:var(--muted);border-top:1px solid var(--line)}
 #picksBar{max-width:1180px;margin:0 auto 14px;padding:0 20px}
 #picksBar:empty{display:none}
@@ -86,7 +88,7 @@ h1{font-size:1.15rem;margin:0;letter-spacing:-.01em}
 #nav{display:flex;gap:4px;max-width:1180px;margin:0 auto 14px;padding:0 20px;overflow-x:auto}
 #nav button{background:none;border:0;color:var(--muted);padding:8px 15px;border-radius:99px;font-weight:600;font-size:.82rem;cursor:pointer;white-space:nowrap;transition:.2s}
 #nav button:hover{color:var(--text);background:var(--card)}
-#nav button.on{background:var(--text);color:#09090b}
+#nav button.on{background:var(--text);color:var(--on)}
 .view{display:none}.view.on{display:block;animation:rise .35s ease}
 .wide{max-width:1180px;margin:0 auto;padding:0 20px 28px}
 @keyframes rise{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
@@ -137,18 +139,21 @@ select{padding:8px 10px;border:1px solid var(--line);border-radius:10px;backgrou
 .wrap,.pc,.g{transition:background .2s,transform .2s}
 #pickPop{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(5,7,12,.62);backdrop-filter:blur(6px);z-index:100;cursor:pointer}
 #pickPop.show{display:flex;animation:fade .18s ease}
-.pp{background:var(--card);border:1px solid var(--accent);border-radius:24px;padding:28px 40px;text-align:center;box-shadow:0 0 0 6px rgba(255,255,255,.08),0 30px 80px rgba(0,0,0,.6);animation:pop .28s cubic-bezier(.2,1.4,.4,1)}
+.pp{background:var(--card);border:1px solid var(--accent);border-radius:24px;padding:28px 40px;text-align:center;box-shadow:0 0 0 6px var(--tint),0 30px 80px rgba(0,0,0,.6);animation:pop .28s cubic-bezier(.2,1.4,.4,1)}
 .pp img{width:110px;height:110px;object-fit:contain;filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}
 .pp .k{font-size:.7rem;font-weight:800;letter-spacing:.14em;color:var(--accent);margin-top:10px}
 .pp .t{font-size:1.5rem;font-weight:800;margin-top:4px}
 .pp .m{font-size:.8rem;color:var(--muted);margin-top:6px}
 @keyframes pop{from{transform:scale(.7);opacity:0}to{transform:scale(1);opacity:1}}
 @keyframes fade{from{opacity:0}to{opacity:1}}
+#themeBtn{background:var(--card);border:1px solid var(--line);color:var(--text);border-radius:99px;padding:5px 12px;font-size:.74rem;font-weight:600;cursor:pointer;transition:.2s}
+#themeBtn:hover{border-color:var(--muted);transform:translateY(-1px)}
+body,.panel,.search input,select,.tile,.tc,.pc,#status,#nav button{transition:background-color .3s,border-color .3s,color .3s}
 </style>
 </head>
 <body>
 <div id="pickPop" onclick="this.classList.remove('show')"></div>
-<header><div class="brand"><span class="logo">🏀</span><h1>NBA Live Tracker</h1></div><div id="status">Loading…</div></header>
+<header><div class="brand"><span class="logo">🏀</span><h1>NBA Live Tracker</h1></div><div style="display:flex;gap:8px;align-items:center"><div id="status">Loading…</div><button id="themeBtn" onclick="toggleTheme()"></button></div></header>
 <nav id="nav"></nav>
 <div class="view on" id="v-tracker">
 <div id="picksBar"></div>
@@ -395,6 +400,10 @@ $('sug').addEventListener('mousedown',e=>{const s=e.target.closest('.sg');if(s)a
 document.addEventListener('click',e=>{if(!e.target.closest('.search'))$('sug').style.display=$('psug').style.display=$('tsug').style.display='none'});
 $('sortBtn').onclick=()=>{sortMode=sortMode==='pts'?'added':'pts';ls.set('nbaSort',sortMode);render()};
 
+/* theme */
+function setTheme(t){document.documentElement.dataset.theme=t;ls.set('nbaTheme',t);$('themeBtn').textContent=t==='day'?'☀️ Day':'🌙 Night'}
+window.toggleTheme=()=>setTheme(document.documentElement.dataset.theme==='day'?'night':'day');
+setTheme(ls.get('nbaTheme','night'));
 /* tabs */
 const TABS={tracker:'Tracker',players:'Players',teams:'Teams',standings:'Standings',h2h:'Head to Head',injuries:'Injuries'};
 $('nav').innerHTML=Object.entries(TABS).map(([k,n])=>`<button data-k="${k}" onclick="tab('${k}')">${n}</button>`).join('');
