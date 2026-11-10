@@ -128,6 +128,7 @@ select{padding:8px 10px;border:1px solid var(--line);border-radius:10px;backgrou
 .tc img{width:46px;height:46px}
 .tile em{display:block;font-style:normal;font-size:.62rem;color:var(--muted);margin-top:2px}
 .cl{cursor:pointer}
+.gl thead th{position:sticky;top:0;background:var(--card);z-index:1}
 .av{width:50px;height:50px;border-radius:50%;background:var(--line);display:grid;place-items:center;font-weight:800;font-size:.8rem;color:var(--muted);position:relative;overflow:hidden;flex:none;box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--line)}
 .av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
 .it{display:flex;gap:10px;padding:9px 14px;border-top:1px solid var(--line);align-items:flex-start;transition:background .15s}
@@ -520,7 +521,23 @@ window.trackP=id=>{
   if(i>=0)watch.splice(i,1);else watch.push({id,name:p.name,team:p.team});
   ls.set('nbaWatch2',watch);render();$('trk').textContent=i>=0?'+ Track':'✓ Tracking';
 };
+let curPid;
+function glHtml(g){
+  const L=g?.labels||[],ev=g?.events||{};
+  const st=(g?.seasonTypes||[]).find(t=>(t.categories||[]).some(c=>c.events?.length));
+  if(!st||!L.length)return '<div class="day">GAME LOG</div><div class="empty">No game log available.</div>';
+  const rows=(st.categories||[]).flatMap(c=>c.events||[]).map(e=>({s:e.stats||[],i:ev[e.eventId]||{}})).sort((a,b)=>new Date(b.i.gameDate)-new Date(a.i.gameDate));
+  const cols=['MIN','PTS','REB','AST','STL','BLK','FG','3PT','FT','TO','PF'].filter(k=>L.includes(k));
+  const v=(r,k)=>r.s[L.indexOf(k)];
+  const avg=k=>(rows.slice(0,5).reduce((a,r)=>a+(parseFloat(v(r,k))||0),0)/Math.min(5,rows.length)).toFixed(1);
+  const tiles=['PTS','REB','AST','MIN'].filter(k=>L.includes(k)).map((k,i)=>`<div class="tile" style="--i:${i}"><b>${avg(k)}</b><span>L5 ${k}</span></div>`).join('');
+  return `<div class="day">GAME LOG · ${esc((st.displayName||'').toUpperCase())} · ${rows.length} GAMES</div><div style="height:12px"></div><div class="tiles">${tiles}</div>
+  <div class="sc gl" style="max-height:440px;overflow:auto"><table class="tb"><thead><tr><th>DATE</th><th>OPP</th><th>RESULT</th>${cols.map(k=>`<th>${k}</th>`).join('')}</tr></thead><tbody>`+
+  rows.map((r,i)=>{const o=r.i.opponent||{},w=r.i.gameResult==='W';
+    return `<tr style="--i:${Math.min(i,12)}"><td style="white-space:nowrap">${r.i.gameDate?new Date(r.i.gameDate).toLocaleDateString([],{month:'short',day:'numeric'}):'–'}</td><td><div class="tmc" style="font-weight:600;white-space:nowrap">${esc(r.i.atVs||'')} ${o.logo?`<img class="tl" src="${esc(o.logo)}" onerror="${imgErr}">`:''}${esc(o.abbreviation||'')}</div></td><td style="white-space:nowrap"><span class="inj" style="${w?'color:var(--live);border-color:var(--live)':'color:var(--bad);border-color:var(--bad)'}">${esc(r.i.gameResult||'–')}</span> ${esc(r.i.score||'')}</td>${cols.map(k=>`<td${k==='PTS'?' style="font-weight:800"':''}>${esc(v(r,k)??'–')}</td>`).join('')}</tr>`}).join('')+'</tbody></table></div>';
+}
 async function showPlayer(p){
+  curPid=p.id;const gl=j(`athletes/${p.id}/gamelog`,{},'common').catch(()=>null);
   const head=`<div class="ph0"><img class="face" src="${esc(p.img)}" onerror="${imgErr}"><div><div class="nm">${esc(p.name)} ${injB(p.id)}</div><div class="gm" style="display:flex;align-items:center;gap:5px">${tImg(teams[p.team])}${esc(teams[p.team]?.name||'')} ${p.pos?'· '+esc(p.pos):''}</div></div><button class="add" id="trk" onclick="trackP('${p.id}')">${watch.some(w=>w.id===p.id)?'✓ Tracking':'+ Track'}</button></div>`;
   $('pres').innerHTML=head+'<div class="sk"></div>';
   try{
@@ -530,6 +547,7 @@ async function showPlayer(p){
     $('pres').innerHTML=head+`<div class="day">${esc(st.displayName||'SEASON AVERAGES').toUpperCase()}</div><div style="height:12px"></div><div class="tiles">${tiles}</div><div class="sc"><table class="tb pt"><thead><tr><th></th>${L.map(l=>`<th>${esc(l)}</th>`).join('')}</tr></thead><tbody>`+
       sp.map((r,i)=>`<tr style="--i:${i}"><td style="text-align:left;white-space:nowrap">${esc(r.displayName)}</td>${r.stats.map(v=>`<td>${esc(v)}</td>`).join('')}</tr>`).join('')+'</tbody></table></div>';
   }catch(e){$('pres').innerHTML=head+'<div class="empty">No season stats available for this player.</div>'}
+  const g=await gl;if(curPid===p.id)$('pres').insertAdjacentHTML('beforeend',glHtml(g));
 }
 
 (async()=>{
