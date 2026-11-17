@@ -153,6 +153,7 @@ select{padding:8px 10px;border:1px solid var(--line);border-radius:10px;backgrou
 .cb i{display:block;background:var(--text);border-radius:99px;animation:grow .9s ease both}.cb i.r{background:var(--muted)}
 .gl thead th{position:sticky;top:0;background:var(--card);z-index:1}
 .av{width:50px;height:50px;border-radius:50%;background:var(--line);display:grid;place-items:center;font-weight:800;font-size:.8rem;color:var(--muted);position:relative;overflow:hidden;flex:none;box-shadow:0 0 0 2px var(--card),0 0 0 3px var(--line)}
+.av.s{width:36px;height:36px;font-size:.65rem}.av.l{width:68px;height:68px;font-size:1.1rem}
 .av img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:top}
 .it{display:flex;gap:10px;padding:9px 14px;border-top:1px solid var(--line);align-items:flex-start;transition:background .15s}
 .it:hover{background:var(--card2)}
@@ -342,7 +343,7 @@ function render(force){
     let rows=watch.map(rowData);
     if(sortMode==='pts')rows.sort((a,b)=>(b.live-a.live)||((b.pts??-1)-(a.pts??-1)));
     $('list').innerHTML=rows.map(r=>`<div class="wrap${r.hit?' hit':''}"><div class="row">
-      <img class="face" src="${esc(face(r.w.id))}" onerror="${imgErr}">
+      ${fa(face(r.w.id),r.w.name)}
       <div class="who"><div class="nm">${esc(r.w.name)} ${tImg(r.t)}${injB(r.w.id)}</div>
       <div class="gm${r.live?' live':''}">${r.live?'● ':''}${esc(r.gm)}</div></div>
       <div class="n pts">${r.pts??'–'}</div><div class="n">${r.reb||'–'}</div><div class="n">${r.ast||'–'}</div>
@@ -454,7 +455,7 @@ function suggest(){
   if(q.length<2){box.style.display='none';return}
   cur=players.filter(p=>p.name.toLowerCase().includes(q)&&!watch.some(w=>w.id===p.id)).slice(0,8);sel=0;
   box.innerHTML=cur.map((p,i)=>`<div class="sg${i?'':' on'}" data-i="${i}">
-    <img class="face" src="${esc(p.img)}" onerror="${imgErr}">
+    ${fa(p.img,p.name)}
     <div><b>${esc(p.name)}</b><div class="t">${tImg(teams[p.team])}${esc(teams[p.team]?.name||'')} ${p.pos?'· '+esc(p.pos):''}</div></div></div>`).join('')||'<div class="empty">No players found</div>';
   box.style.display='block';
 }
@@ -476,7 +477,17 @@ document.addEventListener('click',e=>{if(!e.target.closest('.search'))$('sug').s
 $('sortBtn').onclick=()=>{sortMode=sortMode==='pts'?'added':'pts';ls.set('nbaSort',sortMode);render()};
 
 /* theme */
-function setTheme(t){document.documentElement.dataset.theme=t;ls.set('nbaTheme',t);$('themeBtn').textContent=t==='day'?'☀️ Day':'🌙 Night'}
+/* team logos: use ESPN's dark-background variants at night so dark logos (Clippers, Nets, Spurs…) stay visible */
+function fixImg(im){
+  const src=im.currentSrc||im.src||'';
+  const o=im.dataset.o||(/teamlogos\/nba\/500(-dark)?\//.test(src)?src.replace('/500-dark/','/500/'):null);
+  if(!o)return;
+  if(!im.dataset.o){im.dataset.o=o;im.addEventListener('error',()=>{if(im.src!==im.dataset.o){im.style.visibility='';im.src=im.dataset.o}},{once:true})}
+  const want=document.documentElement.dataset.theme==='day'?o:o.replace('/500/','/500-dark/');
+  if(im.src!==want)im.src=want;
+}
+new MutationObserver(ms=>ms.forEach(m=>m.addedNodes.forEach(n=>{if(n.nodeType!==1)return;n.tagName==='IMG'?fixImg(n):n.querySelectorAll&&n.querySelectorAll('img').forEach(fixImg)}))).observe(document.body,{childList:true,subtree:true});
+function setTheme(t){document.documentElement.dataset.theme=t;ls.set('nbaTheme',t);document.querySelectorAll('img').forEach(fixImg);$('themeBtn').textContent=t==='day'?'☀️ Day':'🌙 Night'}
 window.toggleTheme=()=>setTheme(document.documentElement.dataset.theme==='day'?'night':'day');
 setTheme(ls.get('nbaTheme','night'));
 /* tabs */
@@ -493,6 +504,7 @@ let inj=[],injMap={};
 const pid=a=>a?.id||players.find(x=>x.name.toLowerCase()===(a?.displayName||'').toLowerCase())?.id;
 const av=a=>{const id=pid(a),pl=players.find(x=>x.id===id),src=a?.headshot?.href||pl?.img||(id?face(id):'');
   return `<div class="av">${esc((a?.displayName||'?').split(' ').map(x=>x[0]).slice(0,2).join(''))}${src?`<img src="${esc(src)}" onerror="this.remove()">`:''}</div>`};
+const fa=(src,name,c='s')=>`<div class="av ${c}">${esc((name||'?').split(' ').map(x=>x[0]).slice(0,2).join(''))}${src?`<img src="${esc(src)}" onerror="this.remove()">`:''}</div>`;
 const injC=s=>/out/i.test(s)?'o':/day|quest|doubt|prob/i.test(s)?'d':'';
 const injB=id=>{const i=injMap[id];if(!i)return'';return `<span class="inj ${injC(i.s)}">${/out/i.test(i.s)?'OUT':/day/i.test(i.s)?'DTD':esc(i.s.slice(0,4).toUpperCase())}</span>`};
 async function loadInj(){
@@ -603,7 +615,7 @@ const f1=v=>v==null||Number.isNaN(v)?'–':v;
 function rosHtml(id){
   const ros=players.filter(p=>p.team===id).map(p=>({p,s:pst[p.id]})).sort((x,y)=>(y.s?.PTS||-1)-(x.s?.PTS||-1));
   return '<div class="sc"><table class="tb"><thead><tr><th></th><th>PLAYER</th><th>GP</th><th>MIN</th><th>PTS</th><th>REB</th><th>AST</th></tr></thead><tbody>'+
-    ros.map(({p,s},i)=>`<tr class="cl" style="--i:${Math.min(i,14)}" onclick="goPlayer('${p.id}')"><td style="width:50px"><img class="face" src="${esc(p.img)}" onerror="${imgErr}"></td><td><div class="nm">${esc(p.name)} ${injB(p.id)}</div><div class="gm">${esc(p.pos)}</div></td><td>${f1(s?.GP)}</td><td>${f1(s?.MIN)}</td><td style="font-weight:800">${f1(s?.PTS)}</td><td>${f1(s?.REB)}</td><td>${f1(s?.AST)}</td></tr>`).join('')+'</tbody></table></div>';
+    ros.map(({p,s},i)=>`<tr class="cl" style="--i:${Math.min(i,14)}" onclick="goPlayer('${p.id}')"><td style="width:50px">${fa(p.img,p.name)}</td><td><div class="nm">${esc(p.name)} ${injB(p.id)}</div><div class="gm">${esc(p.pos)}</div></td><td>${f1(s?.GP)}</td><td>${f1(s?.MIN)}</td><td style="font-weight:800">${f1(s?.PTS)}</td><td>${f1(s?.REB)}</td><td>${f1(s?.AST)}</td></tr>`).join('')+'</tbody></table></div>';
 }
 async function loadRoster(id){
   const el=$('ros');if(!el)return;el.innerHTML=rosHtml(id);
@@ -618,7 +630,7 @@ const pin=$('pin'),psug=$('psug');let pc=[];
 pin.addEventListener('input',()=>{
   const q=pin.value.trim().toLowerCase();if(q.length<2){psug.style.display='none';return}
   pc=players.filter(p=>p.name.toLowerCase().includes(q)).slice(0,8);
-  psug.innerHTML=pc.map((p,i)=>`<div class="sg" data-i="${i}"><img class="face" src="${esc(p.img)}" onerror="${imgErr}"><div><b>${esc(p.name)}</b><div class="t">${tImg(teams[p.team])}${esc(teams[p.team]?.name||'')} ${p.pos?'· '+esc(p.pos):''}</div></div></div>`).join('')||'<div class="empty">No players found</div>';
+  psug.innerHTML=pc.map((p,i)=>`<div class="sg" data-i="${i}">${fa(p.img,p.name)}<div><b>${esc(p.name)}</b><div class="t">${tImg(teams[p.team])}${esc(teams[p.team]?.name||'')} ${p.pos?'· '+esc(p.pos):''}</div></div></div>`).join('')||'<div class="empty">No players found</div>';
   psug.style.display='block';
 });
 psug.addEventListener('mousedown',e=>{const s=e.target.closest('.sg');if(s)pickP(pc[+s.dataset.i])});
@@ -647,7 +659,7 @@ function glHtml(g){
 }
 async function showPlayer(p){
   curPid=p.id;const gl=j(`athletes/${p.id}/gamelog`,{},'common').catch(()=>null);
-  const head=`<div class="ph0"><img class="face" src="${esc(p.img)}" onerror="${imgErr}"><div><div class="nm">${esc(p.name)} ${injB(p.id)}</div><div class="gm" style="display:flex;align-items:center;gap:5px">${tImg(teams[p.team])}${esc(teams[p.team]?.name||'')} ${p.pos?'· '+esc(p.pos):''}</div></div><button class="add" id="trk" onclick="trackP('${p.id}')">${watch.some(w=>w.id===p.id)?'✓ Tracking':'+ Track'}</button></div>`;
+  const head=`<div class="ph0">${fa(p.img,p.name,'l')}<div><div class="nm">${esc(p.name)} ${injB(p.id)}</div><div class="gm" style="display:flex;align-items:center;gap:5px">${tImg(teams[p.team])}${esc(teams[p.team]?.name||'')} ${p.pos?'· '+esc(p.pos):''}</div></div><button class="add" id="trk" onclick="trackP('${p.id}')">${watch.some(w=>w.id===p.id)?'✓ Tracking':'+ Track'}</button></div>`;
   $('pres').innerHTML=head+'<div class="sk"></div>';
   try{
     const o=await j(`athletes/${p.id}/overview`,{},'common'),st=o.statistics,L=st?.labels||[],sp=st?.splits||[];
